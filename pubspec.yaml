@@ -16,6 +16,9 @@ dependencies:
   fl_chart: ^0.55.2
   expandable: ^5.0.1
   flutter_launcher_icons: ^0.10.0
+  csv: ^5.0.0
+  path_provider: ^2.0.11
+  share_plus: ^6.3.0
 
 dev_dependencies:
   flutter_test:

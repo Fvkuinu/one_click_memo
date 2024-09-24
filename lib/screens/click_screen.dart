@@ -5,10 +5,14 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:one_click_memo/screens/calendar_screen.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:intl/intl.dart';
+import 'package:csv/csv.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 const myKey = 'my_string_list';
 bool darkMode = true;
+
 class ClickScreen extends StatefulWidget {
   const ClickScreen({super.key});
 
@@ -17,235 +21,230 @@ class ClickScreen extends StatefulWidget {
 }
 
 class _ClickScreenState extends State<ClickScreen> {
-  List<Time> times = []; //時刻を保存する配列
+  List<Time> times = []; // List to store times
 
   @override
   void initState() {
     super.initState();
-    init();
+    // Ensure initialization after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      init();
+    });
   }
 
-  // アプリ起動時に保存したデータを読み込む
+  // Initialize and load saved data
   void init() async {
     print(222);
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       List<String> timesStringList = prefs.getStringList(myKey) ?? [];
-      for(int i = 0; i < timesStringList.length; i++){
+      for (int i = 0; i < timesStringList.length; i++) {
         times.add(Time(date: stringToDateTime(timesStringList[i])));
       }
-      //timesStringList.map((s) => times.add(Time(date: stringToDateTime(s))));
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       backgroundColor: Colors.black,
-      appBar: AppBar( //アプリのバー
-        centerTitle: true, // 中央寄せを設定
+      appBar: AppBar( // App bar
+        centerTitle: true,
         backgroundColor: Colors.black,
         title: const Text('メモ'),
       ),
-      
-      body: Center( //中央に揃える
-        child: Column( //縦に続けて置くためのもの
-            children: [
-                // 空白を指定
-                Padding(
-                    padding: const EdgeInsets.symmetric(
-                    vertical: 30,
-                    //horizontal: 36,
-                ),
-                // ボタンを作成
-                child: SizedBox(
-                  width: 120, //横幅
-                  height: 120, //高さ
+      body: Center( // Center alignment
+        child: Column(
+          children: [
+            // Add Button
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              child: SizedBox(
+                width: 120,
+                height: 120,
                 child: ElevatedButton(
-                        child: const Text(
-                            '追加', 
-                            style: TextStyle(
-                            fontSize: 24 /*サイズ*/,
-                          ),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          primary: Colors.grey[850],
-                          onPrimary: Colors.white,
-                          shape: const CircleBorder(
-                            side: BorderSide(
-                              color: Colors.black,
-                              width: 1,
-                              style: BorderStyle.solid,
-                            ),
-                          ),
-                        ),
-                      onPressed: () async {//ボタンが押された時の処理
-                        setState(() {//buildを実行させるための関数
-                            times.add(Time(date: DateTime.now()));
-                        });
-                        final prefs = await SharedPreferences.getInstance();
-                        // データを保存する
-                        prefs.setStringList(myKey, times.map((t) => DateFormat('yyyy/MM/dd(E) HH:mm:ss.SSS').format(t.date)).toList());                       
-                        
-                        List<String> timesStringList = prefs.getStringList(myKey) ?? [];
-                        print(stringToDateTime(timesStringList[0]));
-                        print(DateFormat('yyyy/MM/dd(E) HH:mm:ss.SSS').format(stringToDateTime(timesStringList[0])));
-      //timesStringList.map((s) => times.add(Time(date: stringToDateTime(s))));
-                      },
+                  child: const Text(
+                    '追加', 
+                    style: TextStyle(
+                      fontSize: 24,
                     ),
                   ),
-                ),
-
-
-
-                Padding(
-                    padding: const EdgeInsets.symmetric(
-                    vertical: 30,
-                    //horizontal: 36,
-                ),
-                // ボタンを作成
-                child: SizedBox(
-                  width: 200, //横幅
-                  height: 50, //高さ
-                child: ElevatedButton.icon(
-                        icon: const Icon(
-                          Icons.calendar_month,
-                          color: Colors.white,
-                        ),
-                        label: const Text('カレンダーを表示'),
-                        style: ElevatedButton.styleFrom(
-                          primary: Colors.blue,
-                          onPrimary: Colors.white,
-                        ),
-                      onPressed: ()  {//ボタンが押された時の処理
-                        Navigator.of(context).push(
-                          MaterialPageRoute( 
-                            builder: ((context) => CalendarScreen(times: times)),
-                          ),
-                        ).then((value) {
-                            setState(() {//buildを実行させるための関数
-                              //times.add(Time(date: DateTime.now()));
-                          });
-                        });
-                      },
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.grey[850],
+                    onPrimary: Colors.white,
+                    shape: const CircleBorder(
+                      side: BorderSide(
+                        color: Colors.black,
+                        width: 1,
+                        style: BorderStyle.solid,
+                      ),
                     ),
                   ),
+                  onPressed: () async { // On button press
+                    setState(() {
+                      times.add(Time(date: DateTime.now()));
+                    });
+                    final prefs = await SharedPreferences.getInstance();
+                    // Save data
+                    prefs.setStringList(myKey, times.map((t) => DateFormat('yyyy/MM/dd(E) HH:mm:ss.SSS').format(t.date)).toList());
+                  },
                 ),
-
-
-              
-                //時間のリスト表示を作成
-              /*Expanded(
-                child: ListView(
-                    children: List.from(times.reversed)
-                        .map((time) => TimeContainer(time: time))
-                        .toList(),
-                ),
-              ),*/
-
-
-                //時間のリスト表示を作成
-              /*Expanded(
-                child: ListView(
-                    children: List.from(times.reversed)
-                        .map((time) => TimeContainer(time: time))
-                        .toList(),
-                ),
-              ),*/
-                
-        Expanded(
-                 child: ListView(
-        children: List.from(times.reversed).map((time) {
-          TimeContainer(time: time);
-          //String str = DateFormat('yyyy/MM/dd(E) HH:mm').format(time.date);
-          return Dismissible(
-            key: Key(DateFormat('yyyy/MM/dd(E) HH:mm:ss.SSS').format(time.date)),
-            
-            child: ListTile(
-              
-              title: Text(getString(time.date),
-               style: TextStyle(
-                 fontSize: 24,
-                 color: Colors.white),
-               ),
-              //tileColor: Colors.black,
-              //textColor: Colors.white,
+              ),
             ),
-            background: Container(color: Colors.red),
-            confirmDismiss: (direction) async {
-              // ここで確認を行う
-              // Future<bool> で確認結果を返す
-              // False の場合削除されない
-              return true;
-            },
-            onDismissed: (direction) async {
-              // 削除アニメーションが完了し、リサイズが終了したときに呼ばれる
-              setState(() {
-                times.removeWhere((t) => t == time);
-                //print(times.length);
-              });
-              final prefs = await SharedPreferences.getInstance();
-                        // データを保存する
-                        prefs.setStringList(myKey, times.map((t) => DateFormat('yyyy/MM/dd(E) HH:mm:ss.SSS').format(t.date)).toList());
+
+            // Calendar Button
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              child: SizedBox(
+                width: 200,
+                height: 50,
+                child: ElevatedButton.icon(
+                  icon: const Icon(
+                    Icons.calendar_month,
+                    color: Colors.white,
+                  ),
+                  label: const Text('カレンダーを表示'),
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.blue,
+                    onPrimary: Colors.white,
+                  ),
+                  onPressed: ()  { // On button press
+                    Navigator.of(context).push(
+                      MaterialPageRoute( 
+                        builder: ((context) => CalendarScreen(times: times)),
+                      ),
+                    ).then((value) {
+                      setState(() {
+                        // Optional: Update state if needed
+                      });
+                    });
+                  },
+                ),
+              ),
+            ),
+
+            // Export to CSV Button
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              child: SizedBox(
+                width: 200,
+                height: 50,
+                child: ElevatedButton.icon(
+                  icon: const Icon(
+                    Icons.download,
+                    color: Colors.white,
+                  ),
+                  label: const Text('CSVをエクスポート'),
+                  style: ElevatedButton.styleFrom(
+                    primary: Colors.green,
+                    onPrimary: Colors.white,
+                  ),
+                  onPressed: exportToCSV, // New method
+                ),
+              ),
+            ),
+
+            // List of Times
+            Expanded(
+              child: ListView(
+                children: List.from(times.reversed).map((time) {
+                  return Dismissible(
+                    key: Key(DateFormat('yyyy/MM/dd(E) HH:mm:ss.SSS').format(time.date)),
+                    child: ListTile(
+                      title: Text(
+                        getString(time.date),
+                        style: const TextStyle(
+                          fontSize: 24,
+                          color: Colors.white
+                        ),
+                      ),
+                    ),
+                    background: Container(color: Colors.red),
+                    confirmDismiss: (direction) async {
+                      // Confirmation dialog can be added here
+                      return true;
+                    },
+                    onDismissed: (direction) async {
+                      setState(() {
+                        times.removeWhere((t) => t == time);
+                      });
+                      final prefs = await SharedPreferences.getInstance();
+                      // Save updated data
+                      prefs.setStringList(myKey, times.map((t) => DateFormat('yyyy/MM/dd(E) HH:mm:ss.SSS').format(t.date)).toList());
                     },
                   );
                 }).toList(),
               ),
             ),
-    
           ],
         ),
       ),
-      /*floatingActionButtonLocation: FloatingActionButtonLocation.miniStartTop,
-      floatingActionButton: FloatingActionButton(  
-        onPressed: () {
-          setState(() {
-                darkMode = (darkMode) ? false : true;
-              });
-          
-        }, // タップ時に実行する処理
-        tooltip: 'selectDarkmode',
-        child: Icon(Icons.dark_mode),
-      ),*/
     );
   }
 
-  String getString(DateTime time){
-    locale: const Locale("ja");
-    initializeDateFormatting("ja");
-    return DateFormat.yMMMd('ja').format(time).toString()+
-	    //ここをEEEEからEにしただけ！
-        '(${DateFormat.E('ja').format(time)})'+' '+
-        time.hour.toString()+'時'+time.minute.toString()+'分';
-  }
-  DateTime stringToDateTime(String datetimeStr){
-    
-     var _dateFormatter = DateFormat("yyyy/MM/dd(E) HH:mm:ss.SSS");
+  // CSV Export Method
+  Future<void> exportToCSV() async {
+    if (times.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('エクスポートするデータがありません。')),
+      );
+      return;
+    }
 
-  // String→DateTime変換
-  
+    try {
+      // 1. Convert times to a List<List<String>> for CSV
+      List<List<String>> csvData = [
+        ['Date', 'Time'], // Header
+        ...times.map((time) => [
+              DateFormat('yyyy/MM/dd(E)').format(time.date),
+              DateFormat('HH:mm:ss.SSS').format(time.date),
+            ]),
+      ];
+
+      // 2. Convert the List<List<String>> to a CSV string
+      String csv = const ListToCsvConverter().convert(csvData);
+
+      // 3. Get the temporary directory
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/times_${DateTime.now().millisecondsSinceEpoch}.csv';
+
+      // 4. Write the CSV string to the file
+      final file = File(path);
+      await file.writeAsString(csv);
+
+      // 5. Share the CSV file
+      await Share.shareFiles([path], text: 'エクスポートされたタイムデータです。');
+    } catch (e) {
+      
+      // Handle any errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('エクスポート中にエラーが発生しました: $e')),
+        
+      );
+    }
+  }
+
+  // Helper method to format DateTime
+  String getString(DateTime time){
+    initializeDateFormatting("ja", null);
+    return DateFormat.yMMMd('ja').format(time) +
+        '(${DateFormat.E('ja').format(time)})' +
+        ' ' +
+        time.hour.toString() + '時' +
+        time.minute.toString() + '分';
+  }
+
+  // Helper method to convert string to DateTime
+  DateTime stringToDateTime(String datetimeStr){
+    var _dateFormatter = DateFormat("yyyy/MM/dd(E) HH:mm:ss.SSS");
     DateTime result = DateTime(1970,1,1);
 
-    // String→DateTime変換
     try {
       result = _dateFormatter.parseStrict(datetimeStr);
-      // (補足)
-      // parseStrict()を使うのが大事。
-      // parse()だと存在しない日付がいい感じ(?)に計算されて変換された
-      // 例)2020/9/32を入れた場合
-      // _dateFormatter.parseStrict("2020/9/32"); // 結果→Exception
-      // _dateFormatter.parse("2020/9/32"); // 結果→2020/10/2のDateTimeに変換
-
     } catch(e){
-      // 変換に失敗した場合の処理
-      
+      // Handle parsing error
+      print('Error parsing date string: $e');
     }
-    //print(DateFormat('yyyy/MM/dd(E) HH:mm:ss.SSS').format(result));
     return result;
   }
-  
-  
 }
-
-
